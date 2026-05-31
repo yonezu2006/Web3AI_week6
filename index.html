@@ -182,9 +182,9 @@ const PATTERNS=[
   {keys:['カフェ','コーヒー','ラテ','スタバ','ドリンク'],cat:'食費',desc:'カフェ代',lo:400,hi:800},
   {keys:['ランチ','昼ごはん','昼飯','定食'],cat:'食費',desc:'ランチ代',lo:600,hi:1200},
   {keys:['コンビニ','セブン','ファミマ','ローソン'],cat:'食費',desc:'コンビニ',lo:300,hi:700},
-  {keys:['ご飯','夕食','夕ごはん','晩ごはん','外食','レストラン','焼肉','ラーメン','寿司','うどん','そば','パスタ'],cat:'食費',desc:'食事代',lo:800,hi:2000},
+  {keys:['ご飯','夕食','夕ごはん','晩ごはん','外食','レストラン','焼肉','ラーメン','寿司','うどん','そば','パスタ','トマト','野菜','食材','スーパー','お惣菜','弁当'],cat:'食費',desc:'食事・食材',lo:300,hi:2000},
   {keys:['友達','友人','みんな','飲み','居酒屋'],cat:'交際費',desc:'友達との食事',lo:1500,hi:4000},
-  {keys:['ライブ','グッズ','推し'],cat:'推し活',desc:'推し活',lo:1000,hi:5000},
+  {keys:['ライブ','グッズ','推し','アクスタ','缶バッジ','ぬいぐるみ','フィギュア','写真集','ポスター','アクリル'],cat:'推し活',desc:'推し活',lo:1000,hi:5000},
   {keys:['課金','ガチャ','アプリ内購入'],cat:'娯楽費',desc:'ゲーム課金',lo:500,hi:3000},
   {keys:['ゲーム','アニメ','映画','カラオケ','遊園地','ボウリング'],cat:'娯楽費',desc:'娯楽',lo:500,hi:3000},
   {keys:['病院','薬','ドラッグストア'],cat:'医療美容費',desc:'医療費',lo:500,hi:3000},
@@ -274,7 +274,15 @@ function handleImg(e){
   const r=new FileReader();r.onload=d=>{const p=document.getElementById('img-preview');p.src=d.target.result;p.style.display='block';};r.readAsDataURL(file);
 }
 function splitSentences(text){
-  return text.split(/[。．，、.，!！?？\n]/).map(s=>s.trim()).filter(s=>s.length>0);
+  // 句読点で分割した後、「〜買った」「〜購入した」「〜した」を含む部分でさらに分割
+  const byPunct = text.split(/[。．，、.!！?？\n]/).map(s=>s.trim()).filter(s=>s.length>0);
+  const result = [];
+  for(const seg of byPunct){
+    // 「買った」「購入した」「課金した」「払った」で終わる節を探して分割
+    const parts = seg.split(/(?<=買った|購入した|課金した|払った|もらった|いただいた)/g);
+    for(const p of parts){ if(p.trim().length>0) result.push(p.trim()); }
+  }
+  return result.length > 0 ? result : [text];
 }
 function mockAnalyze(text){
   const sentences=splitSentences(text);
