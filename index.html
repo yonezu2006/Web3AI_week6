@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>おこづかい帳 v2</title>
+<title>おこづかい帳 v2.1</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -56,7 +56,7 @@ textarea:focus{border-color:var(--sky-mid)}
 .msg.ai{background:var(--sky);color:var(--sky-dark);align-self:flex-start;border-bottom-left-radius:2px}
 .msg.user{background:var(--sky-deep);color:white;align-self:flex-end;border-bottom-right-radius:2px}
 .msg.thinking{background:var(--sky);color:var(--muted);font-style:italic;font-size:12px}
-.quote{font-size:11px;background:rgba(36,150,200,.1);border-left:3px solid var(--sky-mid);padding:4px 8px;border-radius:0 6px 6px 0;margin-bottom:4px;color:var(--sky-dark);font-style:italic}
+.quote{font-size:11px;background:rgba(36,150,200,.1);border-left:3px solid var(--sky-mid);padding:4px 8px;border-radius:0 6px 6px 0;color:var(--sky-dark);font-style:italic;align-self:flex-start;max-width:88%}
 .choice-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .choice-btn{padding:5px 12px;border:1px solid var(--sky-mid);border-radius:16px;background:var(--white);font-size:12px;color:var(--sky-dark);cursor:pointer;font-family:inherit;transition:all .12s}
 .choice-btn:hover{background:var(--sky)}
@@ -116,7 +116,7 @@ textarea:focus{border-color:var(--sky-mid)}
 <div class="screen" id="screen-diary">
   <div style="font-size:15px;font-weight:700;margin-bottom:3px">今日の日記を書く <span class="mock-badge">デモ版</span></div>
   <div class="diary-sub">書いた内容からAIが支出・収入を自動で検出します</div>
-  <textarea id="diary-text" rows="5" placeholder="例）友達とカフェでケーキを食べた。その後ゲームで課金した。"></textarea>
+  <textarea id="diary-text" rows="5" placeholder="例）ケーキを食べた。その後ゲームで課金した。"></textarea>
   <div class="img-row">
     <button class="img-btn" onclick="document.getElementById('img-input').click()">📷 画像を追加</button>
     <input type="file" id="img-input" accept="image/*" style="display:none" onchange="handleImg(event)">
@@ -172,15 +172,13 @@ textarea:focus{border-color:var(--sky-mid)}
 </div>
 
 <script>
+// v2.1 - 文単位検出 + 引用表示
 const CATS={食費:'🍜',交際費:'👥',交通費:'🚃',推し活:'⭐',娯楽費:'🎮',医療美容費:'💊',その他:'📦',収入:'💚'};
 const CAT_KEYS=['食費','交際費','交通費','推し活','娯楽費','医療美容費','その他'];
 const PAYS=['現金','PayPay','銀行','その他'];
 const INCOMES=['お小遣い','バイト代','その他'];
-const S={balances:{cash:0,paypay:0,bank:0},transactions:[],diaries:[],pending:[],idx:0};
-
-// パターン定義（一文単位でマッチさせる）
 const PATTERNS=[
-  {keys:['ケーキ','パフェ','スイーツ','デザート'],cat:'食費',desc:'スイーツ代',lo:400,hi:900},
+  {keys:['ケーキ','パフェ','スイーツ','デザート','アイス'],cat:'食費',desc:'スイーツ代',lo:400,hi:900},
   {keys:['カフェ','コーヒー','ラテ','スタバ','ドリンク'],cat:'食費',desc:'カフェ代',lo:400,hi:800},
   {keys:['ランチ','昼ごはん','昼飯','定食'],cat:'食費',desc:'ランチ代',lo:600,hi:1200},
   {keys:['コンビニ','セブン','ファミマ','ローソン'],cat:'食費',desc:'コンビニ',lo:300,hi:700},
@@ -195,6 +193,7 @@ const PATTERNS=[
   {keys:['お小遣い','小遣い'],type:'income',itype:'お小遣い',desc:'お小遣い',lo:1000,hi:5000},
   {keys:['バイト','バイト代','給料'],type:'income',itype:'バイト代',desc:'バイト代',lo:5000,hi:30000},
 ];
+const S={balances:{cash:0,paypay:0,bank:0},transactions:[],diaries:[],pending:[],idx:0,_currentDiaryText:''};
 
 function saveToLS(){localStorage.setItem('okozukai_v2',JSON.stringify({balances:S.balances,transactions:S.transactions,diaries:S.diaries}));}
 function loadFromLS(){
@@ -223,7 +222,7 @@ function showScreen(name,btn){
   if(name==='dashboard')renderDashboard();
   if(name==='diarylist')renderDiaryList();
 }
-function fmt(n){return '¥'+Math.round(n).toLocaleString('ja-JP')}
+function fmt(n){return '¥'+Math.round(n).toLocaleString('ja-JP');}
 function renderDashboard(){
   const b=S.balances;
   document.getElementById('bal-cash').textContent=fmt(b.cash);
@@ -234,7 +233,7 @@ function renderDashboard(){
   const ca=document.getElementById('chart-area');
   if(!txs.length){ca.innerHTML='<div class="empty">まだ記録がありません</div>';}
   else{
-    const ct={};txs.filter(t=>t.type==='expense').forEach(t=>{ct[t.category]=(ct[t.category]||0)+t.amount});
+    const ct={};txs.filter(t=>t.type==='expense').forEach(t=>{ct[t.category]=(ct[t.category]||0)+t.amount;});
     const max=Math.max(...Object.values(ct),1);
     ca.innerHTML=Object.entries(ct).map(([c,a])=>`<div class="bar-row"><div class="bar-lbl">${CATS[c]||'📦'} ${c}</div><div class="bar-bg"><div class="bar-fill" style="width:${Math.round(a/max*100)}%"></div></div><div class="bar-val">${fmt(a)}</div></div>`).join('');
   }
@@ -274,14 +273,9 @@ function handleImg(e){
   document.getElementById('img-name').textContent='📎 '+file.name;
   const r=new FileReader();r.onload=d=>{const p=document.getElementById('img-preview');p.src=d.target.result;p.style.display='block';};r.readAsDataURL(file);
 }
-
-// テキストを文単位に分割
 function splitSentences(text){
-  // 。．.！？!? で分割、空文字除去
-  return text.split(/[。．\.！？!?\n]/).map(s=>s.trim()).filter(s=>s.length>0);
+  return text.split(/[。．.！？!?\n]/).map(s=>s.trim()).filter(s=>s.length>0);
 }
-
-// 文単位で全パターンとマッチさせる（1文に複数マッチしても1件）
 function mockAnalyze(text){
   const sentences=splitSentences(text);
   const found=[];
@@ -291,22 +285,19 @@ function mockAnalyze(text){
         found.push({
           type:p.type||'expense',
           description:p.desc,
-          sourceText:sentence,  // 引用元の文
+          sourceText:sentence,
           category:p.cat||'その他',
           incomeType:p.itype||null,
           amount:null,method:null,
           mockAmt:p.lo+Math.floor(Math.random()*(p.hi-p.lo))
         });
-        break; // 1文につき最初にマッチしたパターン1件だけ
+        break;
       }
     }
   }
-  if(!found.length){
-    found.push({type:'expense',description:'支出',sourceText:text,category:'その他',amount:null,method:null,mockAmt:500});
-  }
+  if(!found.length){found.push({type:'expense',description:'支出',sourceText:text,category:'その他',amount:null,method:null,mockAmt:500});}
   return found;
 }
-
 function addChat(text,role){
   const area=document.getElementById('chat-area');
   const d=document.createElement('div');d.className='msg '+role;d.textContent=text;
@@ -318,7 +309,6 @@ function addQuote(text){
   area.appendChild(d);area.scrollTop=area.scrollHeight;
 }
 function clearI(){document.getElementById('interact-area').innerHTML='';}
-
 function analyzeDiary(){
   const text=document.getElementById('diary-text').value.trim();
   if(!text){alert('日記を書いてください');return;}
@@ -336,16 +326,14 @@ function analyzeDiary(){
     setTimeout(askNext,400);
   },1200);
 }
-
 function askNext(){
   if(S.idx>=S.pending.length){saveAll();return;}
   const item=S.pending[S.idx];clearI();
+  addQuote(item.sourceText);
   if(item.type==='expense'){
-    addQuote(item.sourceText);
     addChat(item.description+'ですね。いくらでしたか？（参考：'+fmt(item.mockAmt)+'くらいかも）','ai');
     showAmtInput(item.mockAmt,amt=>{item.amount=amt;addChat(fmt(amt),'user');askCategory(item);});
   }else{
-    addQuote(item.sourceText);
     addChat(item.description+'ですね！何の収入ですか？','ai');
     showChoices(INCOMES,c=>{item.incomeType=c;addChat(c,'user');askIncomeAmt(item);});
   }
@@ -388,7 +376,7 @@ function saveAll(){
     const key=mp[item.method];
     if(key)S.balances[key]+=item.type==='expense'?-item.amount:item.amount;
   });
-  S.diaries.push({date:today,text:S._currentDiaryText||'',transactions:diaryTxs});
+  S.diaries.push({date:today,text:S._currentDiaryText,transactions:diaryTxs});
   saveToLS();
   addChat('✅ '+S.pending.length+'件を記録して日記を保存しました！','ai');
   clearI();
