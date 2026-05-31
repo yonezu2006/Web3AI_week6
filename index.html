@@ -274,7 +274,7 @@ function handleImg(e){
   const r=new FileReader();r.onload=d=>{const p=document.getElementById('img-preview');p.src=d.target.result;p.style.display='block';};r.readAsDataURL(file);
 }
 function splitSentences(text){
-  return text.split(/[。．.！？!?\n]/).map(s=>s.trim()).filter(s=>s.length>0);
+  return text.split(/[。．，、.，!！?？\n]/).map(s=>s.trim()).filter(s=>s.length>0);
 }
 function mockAnalyze(text){
   const sentences=splitSentences(text);
